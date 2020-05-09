@@ -5,6 +5,22 @@
 #pragma once
 
 
+typedef struct NAMEVALUE_T
+{
+	LPCSTR pName;
+	LPCSTR pValue;
+}NameValue_t;
+
+//WorkFileItem
+typedef struct _ITEM_T {
+
+	UINT		Index;
+	LPCSTR		pName;
+	CString 	pValue;
+	int			vInt;
+	float		vFloat;
+}_Item_t;
+
 // CCacuLPDlg 对话框
 class CCacuLPDlg : public CDialogEx
 {
@@ -19,8 +35,22 @@ public:
 
 	protected:
 	virtual void DoDataExchange(CDataExchange* pDX);	// DDX/DDV 支持
+#define I_OutputPath			(0)//默认存储路径
+#define I_Index					(1)//索引
+#define I_FileName				(2)//索引
+#define I_Number				(3)//索引
 
 
+#define  DefConfTblSize		(4)
+	const NameValue_t DefConfTbl[DefConfTblSize] =
+	{
+		{"DefPath"," "},
+		{"Index","1"},
+		{"FileName","宝贝的习题"},
+		{"Number","36"},
+	};
+
+	_Item_t  m_Conf[DefConfTblSize];//默认配置文件缓存
 
 	int A;
 	int B;
@@ -29,7 +59,12 @@ public:
 	int Index;
 
 	CString m_MyWorkPath;
+	CString m_OutputPath;
+	CString m_DefConfPath;
 
+
+
+	int IsInitOk = 0;
 public:
 
 	//加法0
@@ -71,6 +106,21 @@ public:
 	void GetEquation(CString& Equation, CString& EquationWithAnswer);
 	void CreatAWork(void);
 	void RepairSpace(CString& Src, int TotalSize);
+
+
+	void FileInit(void);
+
+	//从字符串 中找到 换行或火车
+	int ReplaceEndLine(char* pSrc, int* SOffeset);
+	//从字符串 中找到 换行或火车
+	int FindEndLineNum(char* pSrc, int vSize, int* Num);
+	//
+	int GetNameAndValue(char* pSrc, char** Value);
+
+
+	void CreateConf(void);
+	int DefConfRead(void);
+	int DefConfWrite(void);
 	BOOL FileTest();
 // 实现
 protected:
@@ -105,4 +155,5 @@ public:
 	CButton m_SubMul;
 	CButton m_DivSub;
 	CButton m_SubDiv;
+	afx_msg void OnEnChangeMfceditbrowse1();
 };

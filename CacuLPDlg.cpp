@@ -64,6 +64,17 @@ CCacuLPDlg::CCacuLPDlg(CWnd* pParent /*=nullptr*/)
 	, m_FileName(_T(""))
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
+
+	for (int i = 0; i < DefConfTblSize; i++)
+	{
+		m_Conf[i].Index = i;
+		m_Conf[i].vFloat = 0.0;
+		m_Conf[i].vInt = 0;
+		m_Conf[i].pValue = _T("");
+		m_Conf[i].pName = DefConfTbl[i].pName;
+	}
+
+	FileInit();//文件系统更新
 }
 
 void CCacuLPDlg::DoDataExchange(CDataExchange* pDX)
@@ -97,6 +108,7 @@ BEGIN_MESSAGE_MAP(CCacuLPDlg, CDialogEx)
 	ON_WM_PAINT()
 	ON_WM_QUERYDRAGICON()
 	ON_BN_CLICKED(IDOK, &CCacuLPDlg::OnBnClickedOk)
+	ON_EN_CHANGE(IDC_MFCEDITBROWSE1, &CCacuLPDlg::OnEnChangeMfceditbrowse1)
 END_MESSAGE_MAP()
 
 
@@ -133,15 +145,10 @@ BOOL CCacuLPDlg::OnInitDialog()
 
 	// TODO: 在此添加额外的初始化代码
 
-	CString tData;
-
-	CFile MyFile;
-	CFileException e;
-	char pPath[MAX_PATH];
-	GetCurrentDirectory(MAX_PATH, pPath);
-	m_MyWorkPath.Format("%s", pPath);
+	m_EditBrowse.SetReadOnly(true);
 	m_EditBrowse.EnableFolderBrowseButton(0, BIF_RETURNONLYFSDIRS | BIF_USENEWUI);
-	m_EditBrowse.SetWindowText(m_MyWorkPath);//show default directory, when you click open,the dialog will whit this directory
+	m_EditBrowse.SetWindowText(m_Conf[I_OutputPath].pValue);//show default directory, when you click open,the dialog will whit this directory
+
 	//m_EditBrowse.EnableFileBrowseButton(_T(""),
 	//	_T("test File(*.txt)|*.txt|所有文件(*.*)|*.*||"));
 
@@ -167,17 +174,14 @@ BOOL CCacuLPDlg::OnInitDialog()
 
 
 
-	CString strTime;
-	CTime tm;
-	tm = CTime::GetCurrentTime();
-	strTime = tm.Format("20%y%m%d-01");
-
-	m_EditFileName.SetWindowText(strTime);
-	m_Number.SetWindowText("36");
 
 
+	m_EditFileName.SetWindowText(m_Conf[I_FileName].pValue);
+	m_Number.SetWindowText(m_Conf[I_Number].pValue);
 	srand((unsigned int)time(NULL));
 
+
+	IsInitOk = 1;
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
 
@@ -192,6 +196,238 @@ void CCacuLPDlg::OnSysCommand(UINT nID, LPARAM lParam)
 	{
 		CDialogEx::OnSysCommand(nID, lParam);
 	}
+}
+
+
+int CCacuLPDlg::ReplaceEndLine(char* pSrc, int* SOffeset) {
+	char* pNextSrc = pSrc;
+	int DataLenth = 0;
+	*SOffeset = 0;
+
+	if (!(*pSrc))
+	{
+		return 0;
+	}
+	//除去数据前 \r \n
+	while ((*pSrc == '\n') || (*pSrc == '\r'))
+	{
+		*pSrc = 0;
+		pSrc++;
+		(*SOffeset)++;
+	}
+	//获取数据
+	while ((*pSrc != '\n') && (*pSrc != '\r'))
+	{
+		if (!(*pSrc))
+		{
+			break;
+		}
+		pSrc++;
+		DataLenth++;
+	}
+	*pSrc = 0;
+	return DataLenth;
+}
+
+
+int CCacuLPDlg::FindEndLineNum(char* pSrc, int vSize, int* Num)
+{
+	int tNum = 0;
+	for (int i = 0; i < vSize; i++)
+	{
+		if (pSrc[i] == '\n')
+		{
+			tNum++;
+		}
+	}
+	*Num = tNum;
+	return  tNum;
+}
+
+int CCacuLPDlg::GetNameAndValue(char* pSrc, char** Value) {
+
+	int tStatus = 0;
+
+	while ((*pSrc))
+	{
+		if ((*pSrc) != ':') {
+			pSrc++;
+		}
+		else
+		{
+			*pSrc = 0;
+			*Value = pSrc + 1;
+			tStatus++;
+			break;
+		}
+	}
+	return tStatus;
+}
+
+
+
+void CCacuLPDlg::CreateConf(void)
+{
+
+	CFile MyFile;
+	CString tData;
+	CFileException e;
+
+	if (!MyFile.Open(m_DefConfPath, CFile::modeCreate | CFile::modeWrite, &e))
+	{
+		TRACE(_T("File could not be opened %d\n"), e.m_cause);
+	}
+	else
+	{
+		for (int i = 0; i < DefConfTblSize; i++) {
+			if (i == I_OutputPath)
+			{
+				tData.Format("%s:%s\n", DefConfTbl[i].pName, m_MyWorkPath.GetString());//设置默认路径为当前文件所在路径
+			}
+			else
+			{
+				tData.Format("%s:%s\n", DefConfTbl[i].pName, DefConfTbl[i].pValue);
+			}
+			MyFile.Write(tData, tData.GetLength());
+		}
+		MyFile.Close();
+		//3.读取conf.conf
+		DefConfRead();
+	}
+}
+
+
+//从默认配置文件 读取到 成员变量
+int CCacuLPDlg::DefConfRead(void)
+{
+	CFile MyFile;
+	CFileException e;
+	int SOffset, datalen;
+	ULONGLONG tStatus;
+	char* pName, * pValue;
+	char* tBuff, * tHead;
+
+
+	if (!MyFile.Open(m_DefConfPath, CFile::modeRead, &e))
+	{
+		TRACE(_T("File could not be opened %d\n"), e.m_cause);
+	}
+	else
+	{
+
+
+		CString tData;
+
+		tStatus = MyFile.GetLength();//获取长度
+		tStatus += 2;//多余2字节，避免错误修改
+		tBuff = new char[tStatus];
+		if (tBuff)
+		{
+			memset(tBuff, 0, tStatus);
+		}
+		else
+		{
+			TRACE(_T("tBuff = new char[tStatus] Fail\n"));
+		}
+		MyFile.Read(tBuff, (UINT)MyFile.GetLength());//读取数据
+		tHead = tBuff;
+		do
+		{
+			//从读取的数据中 截取一个【名-值】 对
+			datalen = ReplaceEndLine(tHead, &SOffset);
+			if (datalen)
+			{
+				char MachedTimes = 0;
+				//从【名-值】获取名字和值指针 
+				pName = tHead + SOffset;
+				tStatus = GetNameAndValue(pName, (char**)(&pValue));
+				if (tStatus)
+				{
+					for (int i = 0; i < DefConfTblSize; i++)
+					{
+						if (!strcmp(pName, DefConfTbl[i].pName)) //匹配
+						{
+							MachedTimes++;
+							m_Conf[i].pValue.Format("%s", pValue);
+							break;
+						}
+					}
+					if (!MachedTimes)
+					{
+						TRACE("未匹配，%s\n", pName);
+					}
+				}
+				else
+				{
+					TRACE(_T("GetNameAndValue() Fail\n"));
+				}
+			}
+			else
+			{
+
+			}
+			tHead = tHead + SOffset + datalen + 1;
+		} while (datalen);
+
+
+		MyFile.Close();
+		delete[] tBuff;
+	}
+	return 0;
+}
+
+//从成员变量 写入到 默认配置文件
+int CCacuLPDlg::DefConfWrite(void)
+{
+	CFile MyFile;
+	CFileException e;
+
+	if (!MyFile.Open(m_DefConfPath, CFile::modeCreate | CFile::modeWrite, &e))
+	{
+		TRACE(_T("File could not be opened %d\n"), e.m_cause);
+	}
+	else
+	{
+		CString tData;
+
+		for (int i = 0; i < DefConfTblSize; i++) {
+			tData.Format("%s:%s\n", m_Conf[i].pName, m_Conf[i].pValue.GetString());
+			MyFile.Write(tData, tData.GetLength());
+		}
+		MyFile.Close();
+	}
+	return 0;
+}
+
+
+void CCacuLPDlg::FileInit(void)
+{
+	//1.check the UserData Dictory
+	CString tPath;
+	CString tData;
+
+	CFile MyFile;
+	CFileException e;
+	char pPath[MAX_PATH];
+	GetCurrentDirectory(MAX_PATH, pPath);
+	m_MyWorkPath.Format("%s", pPath);//1.获取 UserData目录
+	m_DefConfPath = m_MyWorkPath + "\\Conf.conf";  //2.获取 Conf.conf目录
+
+
+	//判断目录是否存在
+	if (PathFileExists(m_DefConfPath.GetString()))//存在
+	{
+		//3.读取Conf.conf
+		DefConfRead();
+
+	}
+	else//目录不存在
+	{
+		//创建文件夹
+		CreateConf();
+		
+	}
+	return;
 }
 
 // 如果向对话框添加最小化按钮，则需要下面的代码
@@ -742,24 +978,37 @@ void CCacuLPDlg::CreatAWork(void)
 	m_Number.GetWindowText(SNumber);
 	sscanf_s(SNumber, "%d", &Number);
 
+
+
+
+	//修改索引
+	int FileIndex = 0;
+	sscanf_s(m_Conf[I_Index].pValue, "%d", &FileIndex);
+
 	tPath.Format("%s\\%s", m_MyWorkPath, m_FileName);//1.获取 UserData目录
-	Equ.Format("%s-题目.txt", tPath);
-	Answer.Format("%s-答案.txt", tPath);
+	Equ.Format("%s-%d-题目.txt", tPath, FileIndex);
+	Answer.Format("%s-%d-答案.txt", tPath, FileIndex);
 
 
-	TRACE("名字：%s %d \n", m_FileName, Number);
-	TRACE("题目：%s\n", Equ);
-	TRACE("答案：%s\n", Answer);
 
 
+	//修改索引
+	m_Conf[I_Index].pValue.Format("%d", FileIndex+1);
+	m_Conf[I_FileName].pValue.Format("%s", m_FileName);
+	m_Conf[I_Number].pValue.Format("%s", SNumber);
+	DefConfWrite();
+
+	tm = CTime::GetCurrentTime();
+	strTime = tm.Format("20%y年%m月%d日 %X");
 
 	//判断目录是否存在
-	if (PathFileExists(Equ.GetString()))//存在
-	{
-		TRACE("文件存在！\n");
-		AfxMessageBox("文件已存在，请重新输入文件名！");
-	}
-	else
+	//if (PathFileExists(Equ.GetString()))//存在
+	//{
+	//	TRACE("文件存在！\n");
+	//	AfxMessageBox("文件已存在，请重新输入文件名！");
+	//}
+	//else
+	//直接覆盖
 	{
 		TRACE("文件不存在！\n");
 		if ((!FileHomework.Open(Equ, CFile::modeCreate | CFile::modeWrite, &e0)) ||
@@ -777,6 +1026,12 @@ void CCacuLPDlg::CreatAWork(void)
 			int tIndex;
 			int IsDuplicatedW0 = 1, IsDuplicatedW1 = 1 ;
 			OldHomework = new CString[Number];
+
+			ResultHomework.Format("生成日期 :%s\r\n\r\n", strTime);
+
+			FileHomework.Write(ResultHomework, ResultHomework.GetLength());
+			FileAnswer.Write(ResultHomework, ResultHomework.GetLength());
+
 			for (int i = 0; i < (Number - tNumber) / 2; i++)
 			{
 				IsDuplicatedW0 = 1;
@@ -872,11 +1127,14 @@ void CCacuLPDlg::CreatAWork(void)
 			//MyFile.Flush();
 			FileHomework.Close();
 			FileAnswer.Close();
+
 			if (OldHomework)
 			{
 				delete[]OldHomework;
 			}
-			AfxMessageBox("Homework 已完成，打印吧！");
+			CString rResu;
+			rResu.Format("习题已经生成《%s-%d-题目.txt》, 关闭此窗口，将打开生成目录！", m_FileName, FileIndex);
+			AfxMessageBox(rResu);
 		}
 	}
 	ShellExecute(NULL, "open", m_MyWorkPath, NULL, NULL, SW_SHOWDEFAULT);
@@ -887,3 +1145,21 @@ BOOL CCacuLPDlg::FileTest() {
 	return 0;
 }
 
+
+
+void CCacuLPDlg::OnEnChangeMfceditbrowse1()
+{
+	// TODO:  如果该控件是 RICHEDIT 控件，它将不
+	// 发送此通知，除非重写 CDialogEx::OnInitDialog()
+	// 函数并调用 CRichEditCtrl().SetEventMask()，
+	// 同时将 ENM_CHANGE 标志“或”运算到掩码中。
+	
+		m_EditBrowse.GetWindowText(m_OutputPath);
+		if (m_OutputPath.GetLength() > 1)
+		{
+			m_Conf[I_OutputPath].pValue = m_OutputPath;
+			DefConfWrite();
+
+		}
+	// TODO:  在此添加控件通知处理程序代码
+}
