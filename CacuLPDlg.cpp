@@ -101,6 +101,7 @@ void CCacuLPDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_CHECK13, m_SubMul);
 	DDX_Control(pDX, IDC_CHECK14, m_DivSub);
 	DDX_Control(pDX, IDC_CHECK15, m_SubDiv);
+	DDX_Control(pDX, IDC_CHECK17, m_AddSeq);
 }
 
 BEGIN_MESSAGE_MAP(CCacuLPDlg, CDialogEx)
@@ -466,6 +467,9 @@ HCURSOR CCacuLPDlg::OnQueryDragIcon()
 	return static_cast<HCURSOR>(m_hIcon);
 }
 
+
+
+#define MinResult	(8)
 //找到一个 a x b的组合
 void CCacuLPDlg::GetMultiplication(int& a, int& b, int& Result)
 {
@@ -476,7 +480,7 @@ void CCacuLPDlg::GetMultiplication(int& a, int& b, int& Result)
 		a = GetRand(2, 9);//2-9
 		b = GetRand(2, 9);//2-9
 
-	} while (a == b);
+	} while (0);//(a == b);
 
 	Result = a * b;
 }
@@ -491,7 +495,7 @@ void CCacuLPDlg::GetDivision(int& a, int& b, int& Result)
 
 		b = GetRand(2, 9);//2-9
 
-	} while (Result == b);
+	} while (0);// (Result == b);
 
 	a = Result * b;
 
@@ -502,10 +506,10 @@ void CCacuLPDlg::GetAddition(int& a, int& b, int& Result)
 {
 	do
 	{
-		Result = GetRand(9, 100);//2-9
+		Result = GetRand(MinResult, 100);//2-9
 		a = GetRand(2, 100);//2-9
 
-	} while ((Result - a) < 5);
+	} while ((Result - a) < MinResult);
 
 	b = Result - a;
 }
@@ -515,10 +519,10 @@ void CCacuLPDlg::GetSubtraction(int& a, int& b, int& Result)
 
 	do
 	{
-		a = GetRand(11, 100);//2-9
+		a = GetRand(10, 100);//2-9
 		b = GetRand(2, 100);//2-9
 
-	} while ((a - b) < 5);
+	} while ((a - b) < MinResult);
 	Result = a - b;
 }
 
@@ -528,7 +532,7 @@ void CCacuLPDlg::GetAddAdd(int& a, int& b, int& c, int& Result)
 	do
 	{
 		GetAddition(a, b, Result);
-		c = GetRand(2, 100);//2-9
+		c = GetRand(MinResult, 100);//
 
 	} while ((Result + c) > 100);
 	Result += c;
@@ -540,9 +544,9 @@ void CCacuLPDlg::GetAddSub(int& a, int& b, int& c, int& Result)
 	do
 	{
 		GetAddition(a, b, Result);
-		c = GetRand(2, 100);//2-9
+		c = GetRand(MinResult, 100);
 
-	} while (((Result - c) > 100) || ((Result - c) < 6));
+	} while (((Result - c) > 100) || ((Result - c) < MinResult));
 	Result -= c;
 }
 //减加
@@ -551,9 +555,9 @@ void CCacuLPDlg::GetSubAdd(int& a, int& b, int& c, int& Result)
 	do
 	{
 		GetSubtraction(a, b, Result);
-		c = GetRand(2, 100);//2-9
+		c = GetRand(MinResult, 100);
 
-	} while (((Result + c) > 100) || ((Result + c) < 6));
+	} while (((Result + c) > 100) || ((Result + c) < MinResult));
 	Result += c;
 }
 //减减
@@ -562,9 +566,9 @@ void CCacuLPDlg::GetSubSub(int& a, int& b, int& c, int& Result)
 	do
 	{
 		GetSubtraction(a, b, Result);
-		c = GetRand(2, 100);//2-9
+		c = GetRand(MinResult, 100);
 
-	} while (((Result - c) > 100) || ((Result - c) < 6));
+	} while (((Result - c) > 100) || ((Result - c) < MinResult));
 	Result -= c;
 }
 
@@ -576,7 +580,7 @@ void CCacuLPDlg::GetMulAdd(int& a, int& b, int& c, int& Result)
 	do
 	{
 		GetMultiplication(a, b, Result);
-		c = GetRand(2, 100);//2-9
+		c = GetRand(MinResult, 100);
 
 	} while ((Result + c) > 100);
 	Result += c;
@@ -590,8 +594,7 @@ void CCacuLPDlg::GetAddMul(int& a, int& b, int& c, int& Result)
 	do
 	{
 		GetMultiplication(b, c, Result);
-		a = GetRand(2, 100);//2-9
-
+		a = GetRand(MinResult, 100);
 	} while ((Result + a) > 100);
 	Result += a;
 }
@@ -603,7 +606,7 @@ void CCacuLPDlg::GetDivAdd(int& a, int& b, int& c, int& Result)
 	do
 	{
 		GetDivision(a, b, Result);
-		c = GetRand(2, 100);//2-9
+		c = GetRand(MinResult, 100);
 
 	} while ((c + a) > 100);
 	Result += c;
@@ -617,7 +620,7 @@ void CCacuLPDlg::GetAddDiv(int& a, int& b, int& c, int& Result)
 	do
 	{
 		GetDivision(b, c, Result);
-		a = GetRand(2, 100);//2-9
+		a = GetRand(MinResult, 100);
 
 	} while ((b + a) > 100);
 	Result += a;
@@ -629,9 +632,9 @@ void CCacuLPDlg::GetMulSub(int& a, int& b, int& c, int& Result)
 	do
 	{
 		GetMultiplication(a, b, Result);
-		c = GetRand(2, 100);//2-9
+		c = GetRand(MinResult, 100);
 
-	} while (((Result - c) > 100)|| ((Result - c)<6));
+	} while (((Result - c) > 100)|| ((Result - c)< MinResult));
 	Result -= c;
 }
 
@@ -641,9 +644,9 @@ void CCacuLPDlg::GetSubMul(int& a, int& b, int& c, int& Result)
 	do
 	{
 		GetMultiplication(b, c, Result);
-		a = GetRand(2, 100);//2-9
+		a = GetRand(MinResult, 100);
 
-	} while (((a - Result) > 100) || ((a - Result) < 8));
+	} while (((a - Result) > 100) || ((a - Result) < MinResult));
 	Result = a - Result;
 }
 
@@ -654,9 +657,9 @@ void CCacuLPDlg::GetDivSub(int& a, int& b, int& c, int& Result)
 	do
 	{
 		GetDivision(a, b, Result);
-		c = GetRand(1, 8);//2-9
+		c = GetRand(1, 9);//2-9
 
-	} while (((Result - c) > 59) || ((Result - c) < 1));
+	} while (((Result - c) > 10) || ((Result - c) < 2));
 	Result -= c;
 }
 
@@ -665,8 +668,8 @@ void CCacuLPDlg::GetSubDiv(int& a, int& b, int& c, int& Result)
 {
 	do
 	{
-		GetDivision(b, c, Result);
 		a = GetRand(10,91);//2-9
+		GetDivision(b, c, Result);
 
 	} while (((a - Result) > 91) || ((a - Result) < 2));
 	Result = a - Result;
@@ -1022,6 +1025,8 @@ void CCacuLPDlg::CreatAWork(void)
 			CString ResultHomework, ResultAnswer;
 			CString tHomework0, tAnswer0;
 			CString tHomework1, tAnswer1;
+			CString tHomework0x, tAnswer0x;
+			CString tHomework1x, tAnswer1x;
 			int tNumber = Number % 2;
 			int tIndex;
 			int IsDuplicatedW0 = 1, IsDuplicatedW1 = 1 ;
@@ -1079,13 +1084,32 @@ void CCacuLPDlg::CreatAWork(void)
 
 				OldHomework[i*2] = tHomework0;
 				OldHomework[i*2 + 1] = tHomework1;
+				if (m_AddSeq.GetCheck())
+				{
+					tHomework0x.Format("(%d) %s", i * 2 + 1, tHomework0.GetString());
+					tHomework1x.Format("(%d) %s", i * 2 + 2, tHomework1.GetString());
 
-				RepairSpace(tHomework0, 80);
-				RepairSpace(tAnswer0, 80);
-				TRACE("tHomework0 = %d\n", tHomework0.GetLength());
-				TRACE("tAnswer0 = %d\n", tAnswer0.GetLength());
-				ResultHomework.Format("%s\t%s\r\n\r\n", tHomework0, tHomework1);
-				ResultAnswer.Format  ("%s\t%s\r\n\r\n", tAnswer0, tAnswer1);
+					tAnswer0x.Format("(%d) %s", i * 2 + 1, tAnswer0.GetString());
+					tAnswer1x.Format("(%d) %s", i * 2 + 2, tAnswer1.GetString());
+					RepairSpace(tHomework0x, 80);
+					RepairSpace(tAnswer0x, 80);
+				}
+				else
+				{
+					tHomework0x = tHomework0;
+					tHomework1x = tHomework1;
+					tAnswer0x = tAnswer0;
+					tAnswer1x = tAnswer1;
+
+					RepairSpace(tHomework0x, 80);
+					RepairSpace(tAnswer0x, 80);
+
+				}
+
+				TRACE("tHomework0 = %d\n", tHomework0x.GetLength());
+				TRACE("tAnswer0 = %d\n", tAnswer0x.GetLength());
+				ResultHomework.Format("%s\t%s\r\n\r\n", tHomework0x, tHomework1x);
+				ResultAnswer.Format  ("%s\t%s\r\n\r\n", tAnswer0x, tAnswer1x);
 
 				FileHomework.Write(ResultHomework, ResultHomework.GetLength());
 				FileAnswer.Write(ResultAnswer, ResultAnswer.GetLength());
@@ -1114,11 +1138,26 @@ void CCacuLPDlg::CreatAWork(void)
 					}
 				} while (IsDuplicatedW0);
 
-				RepairSpace(tHomework0, 80);
-				RepairSpace(tAnswer0, 80);
 
-				ResultHomework.Format("%s\r\n\r\n", tHomework0);
-				ResultAnswer.Format("%s\r\n\r\n", tAnswer0);
+				if (m_AddSeq.GetCheck())
+				{
+					tHomework0x.Format("(%d) %s", Number, tHomework0.GetString());
+					tAnswer0x.Format("(%d) %s", Number, tAnswer0.GetString());
+					RepairSpace(tHomework0x, 80);
+					RepairSpace(tAnswer0x, 80);
+				}
+				else
+				{
+					tHomework0x = tHomework0;
+					tAnswer0x = tAnswer0;
+
+					RepairSpace(tHomework0x, 80);
+					RepairSpace(tAnswer0x, 80);
+				}
+
+
+				ResultHomework.Format("%s\r\n\r\n", tHomework0x);
+				ResultAnswer.Format("%s\r\n\r\n", tAnswer0x);
 
 				FileHomework.Write(ResultHomework, ResultHomework.GetLength());
 				FileAnswer.Write(ResultAnswer, ResultAnswer.GetLength());

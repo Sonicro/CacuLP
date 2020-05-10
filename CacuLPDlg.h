@@ -156,4 +156,5 @@ public:
 	CButton m_DivSub;
 	CButton m_SubDiv;
 	afx_msg void OnEnChangeMfceditbrowse1();
+	CButton m_AddSeq;
 };
